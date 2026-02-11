@@ -1,27 +1,11 @@
-version: "3.8"
-
 services:
-  # Backend: Node.js API
-  backend:
-    build: ./backend
-    container_name: herama_backend
-    restart: always
-    ports:
-      - "3001:3000" # Akses VPS lewat port 3001
-    env_file:
-      - ./backend/.env
-    networks:
-      - herama_network
-
   # Frontend: React Admin (Nginx)
   frontend:
-    build: ./admin-topup
+    build: .
     container_name: herama_frontend
     restart: always
     ports:
-      - "5174:80" # Akses VPS lewat port 5174 (karena 8080 sudah dipakai)
-    depends_on:
-      - backend
+      - "5174:80" # Akses lewat port 5174 karena 8080 sudah terpakai
     networks:
       - herama_network
 
