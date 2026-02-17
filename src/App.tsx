@@ -6,6 +6,9 @@ import Dashboard from "./pages/Dashboard";
 import transactions from "./resources/transactions";
 import { ProductList } from "./resources/products/ProductList";
 import { ProductShow } from "./resources/products/ProductShow";
+import { CategoryList } from "./resources/categories/CategoryList";
+import { CategoryEdit } from "./resources/categories/CategoryEdit";
+import CategoryIcon from "@mui/icons-material/Category";
 
 const App = () => (
   <Admin
@@ -25,6 +28,13 @@ const App = () => (
       list={ProductList}
       show={ProductShow}
       options={{ label: "Manajemen Produk" }}
+    />
+    <Resource
+      name="categories"
+      list={CategoryList}
+      edit={CategoryEdit}
+      icon={CategoryIcon}
+      options={{ label: "Manage Categories" }}
     />
   </Admin>
 );

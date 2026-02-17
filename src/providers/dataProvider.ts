@@ -15,7 +15,6 @@ const httpClient = (url: string, options: any = {}) => {
 // src/providers/dataProvider.ts
 export const dataProvider: DataProvider = {
   getList: async (resource, params) => {
-    // FIX: Gunakan ?. agar tidak error saat pagination/sort kosong
     const page = params.pagination?.page ?? 1;
     const perPage = params.pagination?.perPage ?? 10;
     const field = params.sort?.field ?? "id";
@@ -29,14 +28,18 @@ export const dataProvider: DataProvider = {
 
     const url = `${apiUrl}/admin/${resource}?${queryString.stringify(query)}`;
     const { json, headers } = await httpClient(url);
-    const data = json[resource] || json.data || json;
+
+    // Ambil data dari response backend kamu
+    const data = json.data || json[resource] || json;
 
     return {
       data: Array.isArray(data) ? data : [],
-      total: parseInt(
-        headers.get("content-range")?.split("/").pop() || "0",
-        10,
-      ),
+      // FIX: Jika header content-range kosong, gunakan panjang array
+      total: headers.get("content-range")
+        ? parseInt(headers.get("content-range")?.split("/").pop() || "0", 10)
+        : Array.isArray(data)
+          ? data.length
+          : 0,
     };
   },
 
@@ -62,14 +65,28 @@ export const dataProvider: DataProvider = {
 
   getMany: async () => ({ data: [] }),
   getManyReference: async () => ({ data: [], total: 0 }),
-  update: () => Promise.reject("Read-only"),
+  update: async (resource, params) => {
+    const url = `${apiUrl}/admin/${resource}/${params.id}`;
+    const { json } = await httpClient(url, {
+      method: "PATCH",
+      body: JSON.stringify(params.data),
+    });
+
+    // FIX: Ambil elemen pertama jika balasan dari backend adalah Array
+    const updatedRecord = Array.isArray(json.data)
+      ? json.data[0]
+      : json.data || json;
+
+    // Pastikan objek memiliki 'id' agar React Admin tidak error
+    return { data: updatedRecord };
+  },
   updateMany: () => Promise.reject("Read-only"),
   delete: async (resource, params) => {
-    const { json } = await httpClient(
-      `${apiUrl}/admin/${resource}/${params.id}`,
-      { method: "DELETE" },
-    );
-    return { data: json };
+    const url = `${apiUrl}/admin/${resource}/${params.id}`;
+    const { json } = await httpClient(url, {
+      method: "DELETE", // Sesuai router.delete
+    });
+    return { data: json.data || json };
   },
   deleteMany: () => Promise.reject("Read-only"),
 };

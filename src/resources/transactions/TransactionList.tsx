@@ -7,16 +7,20 @@ import {
   NumberField,
   SelectInput,
   FunctionField,
+  SimpleList,
 } from "react-admin";
-import { Chip } from "@mui/material";
+import {
+  Chip,
+  Typography,
+  useMediaQuery,
+  Box,
+  type Theme,
+} from "@mui/material";
 
-// Filter pencarian yang lebih lengkap
 const transactionFilters = [
-  // 'q' untuk pencarian umum (Ref ID, No HP, Produk)
   <TextInput source="q" label="Cari Transaksi" alwaysOn />,
   <TextInput source="customer_no" label="Nomor Tujuan" />,
   <TextInput source="ref_id" label="Reference ID" />,
-  // Menambahkan filter status untuk mempermudah pemantauan
   <SelectInput
     source="status"
     label="Status"
@@ -28,44 +32,79 @@ const transactionFilters = [
   />,
 ];
 
-export const TransactionList = () => (
-  <List
-    title="Semua Transaksi Top-up"
-    filters={transactionFilters}
-    sort={{ field: "created_at", order: "DESC" }}
-  >
-    <Datagrid rowClick="show" bulkActionButtons={false}>
-      <TextField source="ref_id" label="Ref ID" />
-      <TextField source="customer_no" label="Tujuan" />
-      <TextField source="display_name" label="Produk" />
-      <NumberField
-        source="amount_sell"
-        label="Harga"
-        options={{ style: "currency", currency: "IDR" }}
-      />
+// Helper untuk status chip agar kode tetap bersih
+const StatusChip = ({ record }: { record: any }) => {
+  if (!record) return null;
+  const label = record.status_label || record.status;
+  let color: "success" | "warning" | "error" | "default" = "default";
 
-      {/* MENGGUNAKAN FUNCTION FIELD AGAR TIDAK KOSONG LAGI */}
-      <FunctionField
-        label="Status"
-        render={(record: any) => {
-          if (!record) return null;
+  if (label === "Success" || label === "sukses") color = "success";
+  if (label === "Waiting Payment" || label === "pending") color = "warning";
+  if (label === "Cancel" || label === "gagal") color = "error";
 
-          // Gunakan status_label, jika tidak ada (karena backend belum siap) pakai status asli
-          const label = record.status_label || record.status;
+  return <Chip label={label} color={color} size="small" />;
+};
 
-          let color: "success" | "warning" | "error" | "default" = "default";
+export const TransactionList = () => {
+  const isSmall = useMediaQuery((theme: Theme) => theme.breakpoints.down("sm"));
 
-          // Logika pewarnaan
-          if (label === "Success" || label === "sukses") color = "success";
-          if (label === "Waiting Payment" || label === "pending")
-            color = "warning";
-          if (label === "Cancel") color = "error";
-
-          return <Chip label={label} color={color} size="small" />;
-        }}
-      />
-
-      <DateField source="created_at" label="Waktu" showTime />
-    </Datagrid>
-  </List>
-);
+  return (
+    <List
+      title="Semua Transaksi Top-up"
+      filters={transactionFilters}
+      sort={{ field: "created_at", order: "DESC" }}
+    >
+      {isSmall ? (
+        /* TAMPILAN MOBILE: Mengubah tabel menjadi daftar vertikal */
+        <SimpleList
+          primaryText={(record) => record.display_name}
+          secondaryText={(record) => (
+            <Box component="span">
+              <Typography
+                variant="body2"
+                component="span"
+                sx={{ fontWeight: "bold" }}
+              >
+                {new Intl.NumberFormat("id-ID", {
+                  style: "currency",
+                  currency: "IDR",
+                  maximumFractionDigits: 0,
+                }).format(record.amount_sell)}
+              </Typography>
+              {` | ${record.ref_id}`}
+            </Box>
+          )}
+          tertiaryText={(record) => (
+            <Box sx={{ textAlign: "right" }}>
+              <StatusChip record={record} />
+              <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+                {new Date(record.created_at).toLocaleTimeString("id-ID", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </Typography>
+            </Box>
+          )}
+          linkType="show"
+        />
+      ) : (
+        /* TAMPILAN DESKTOP: Tetap menggunakan Datagrid lengkap */
+        <Datagrid rowClick="show" bulkActionButtons={false}>
+          <TextField source="ref_id" label="Ref ID" />
+          <TextField source="customer_no" label="Tujuan" />
+          <TextField source="display_name" label="Produk" />
+          <NumberField
+            source="amount_sell"
+            label="Harga"
+            options={{ style: "currency", currency: "IDR" }}
+          />
+          <FunctionField
+            label="Status"
+            render={(record: any) => <StatusChip record={record} />}
+          />
+          <DateField source="created_at" label="Waktu" showTime />
+        </Datagrid>
+      )}
+    </List>
+  );
+};
