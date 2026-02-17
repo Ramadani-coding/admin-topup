@@ -101,7 +101,6 @@ export const CategoryEdit = () => {
         <ArrayInput source="server_list">
           <SimpleFormIterator
             inline={!isSmall} // Matikan inline di mobile agar input bertumpuk rapi
-            addButtonLabel="Add to server list"
           >
             <TextInput
               source="label"
